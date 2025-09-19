@@ -228,7 +228,9 @@ else if (json?.data && Array.isArray(json.data)) {
             <tr key={i} style={rowStyle}>
               <td style={cellStyle}>{item.kode}</td>
               <td style={cellStyle}>{item.keterangan}</td>
-              <td style={cellStyle}>Rp {Number(item.harga)?.toLocaleString('id-ID')}</td>
+              <td style={cellStyle}>
+  Rp {parseInt(item.harga.replace(/\./g, ''), 10).toLocaleString('id-ID')}
+</td>
               <td style={cellStyle}>
                 <span style={{
                   padding: '4px 8px',
