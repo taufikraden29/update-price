@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '../../lib/supabaseClient'
 
 export async function GET() {
   try {
@@ -30,21 +30,22 @@ export async function GET() {
       result.push({ kategori: title, data: items })
     })
 
-    // simpan ke Supabase
-    for (const kat of result) {
-      for (const item of kat.data) {
-        await supabase
-          .from('produk')
-          .upsert({
-            kategori: kat.kategori,
-            kode: item.kode,
-            keterangan: item.keterangan,
-            harga: item.harga,
-            status: item.status,
-            harga_lama: item.harga_lama,
-            tanggal_scrape: item.tanggal_scrape
-          }, { onConflict: 'kode' })
-      }
+    // Flatten array supaya bisa langsung insert banyak
+    const flatData = result.flatMap(kat => 
+      kat.data.map(item => ({
+        kategori: kat.kategori,
+        ...item
+      }))
+    )
+
+    // simpan ke Supabase (bulk upsert)
+    const { error } = await supabase
+      .from('produk')
+      .upsert(flatData, { onConflict: 'kode' })
+
+    if (error) {
+      console.error(error)
+      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
     }
 
     return new Response(JSON.stringify(result), {
