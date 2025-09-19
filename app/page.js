@@ -16,6 +16,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('tabel');
   const [searchTerm, setSearchTerm] = useState('');
   const [windowWidth, setWindowWidth] = useState(1200);
+const [notif, setNotif] = useState(null);
+const [logs, setLogs] = useState([]);
+
+
 
   // === Fetch data dari API ===
   useEffect(() => {
@@ -23,32 +27,51 @@ export default function Home() {
       fetch('/api/produk')
         .then(res => res.json())
         .then(json => {
-          let normalized = [];
+  let normalized = [];
 
-          // kalau responsnya array of { kategori, data: [...] }
-if (Array.isArray(json) && json.length > 0 && json[0].data) {
-  normalized = json.flatMap(group =>
-    group.data.map(item => ({
+  if (Array.isArray(json) && json.length > 0 && json[0].data) {
+    normalized = json.flatMap(group =>
+      group.data.map(item => ({
+        ...item,
+        kategori: group.kategori || "Umum"
+      }))
+    );
+  } else if (Array.isArray(json)) {
+    normalized = json;
+  } else if (json?.data && Array.isArray(json.data)) {
+    normalized = json.data.map(item => ({
       ...item,
-      kategori: group.kategori || "Umum"
-    }))
-  );
-}
-// kalau responsnya langsung array
-else if (Array.isArray(json)) {
-  normalized = json;
-}
-// kalau responsnya { kategori, data: [...] } tanpa array luar
-else if (json?.data && Array.isArray(json.data)) {
-  normalized = json.data.map(item => ({
-    ...item,
-    kategori: json.kategori || "Umum"
-  }));
+      kategori: json.kategori || "Umum"
+    }));
+  }
+
+ if (data.length > 0) {
+  const newLogs = [];
+  normalized.forEach(item => {
+    const old = data.find(d => d.kode === item.kode);
+    if (old) {
+      if (old.harga !== item.harga) {
+        newLogs.push({
+          time: new Date().toLocaleString('id-ID'),
+          message: `💰 Harga ${item.kode} berubah dari Rp ${old.harga} → Rp ${item.harga}`
+        });
+      }
+      if (old.status !== item.status) {
+        newLogs.push({
+          time: new Date().toLocaleString('id-ID'),
+          message: `📦 Status ${item.kode} berubah dari ${old.status} → ${item.status}`
+        });
+      }
+    }
+  });
+  if (newLogs.length > 0) {
+    setLogs(prev => [...newLogs, ...prev]); // prepend biar terbaru di atas
+  }
 }
 
-          setData(normalized);
-          setLastUpdated(new Date().toLocaleString('id-ID'));
-        })
+  setData(normalized);
+  setLastUpdated(new Date().toLocaleString('id-ID'));
+})
         .catch(err => console.error(err));
     };
 
@@ -155,6 +178,21 @@ else if (json?.data && Array.isArray(json.data)) {
     downloadCSV(csv, 'laporan_ketersediaan.csv');
   };
 
+  const exportLogData = () => {
+  if (logs.length === 0) {
+    alert("Belum ada log perubahan.");
+    return;
+  }
+
+  let csv = 'Waktu,Perubahan\n';
+  logs.forEach(log => {
+    csv += `"${log.time}","${log.message}"\n`;
+  });
+  downloadCSV(csv, 'log_perubahan.csv');
+};
+
+
+
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>📊 Dashboard Produk</h1>
@@ -166,6 +204,7 @@ else if (json?.data && Array.isArray(json.data)) {
       <div style={tabWrapper}>
         <button onClick={() => setActiveTab('tabel')} style={tabButton(activeTab === 'tabel')}>Tabel Data</button>
         <button onClick={() => setActiveTab('grafik')} style={tabButton(activeTab === 'grafik')}>Grafik Gangguan</button>
+        <button onClick={() => setActiveTab('log')} style={tabButton(activeTab === 'log')}>Log Perubahan</button>
       </div>
 
       {/* Tombol Export */}
@@ -252,6 +291,27 @@ else if (json?.data && Array.isArray(json.data)) {
 
         </div>
       )}
+
+      {activeTab === 'log' && (
+  <div style={{ marginTop: '20px', background: '#fff', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+  <button style={btnExport} onClick={exportLogData}>Export Log</button>
+
+    <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '10px' }}>📝 Log Perubahan Data</h2>
+    {logs.length === 0 ? (
+      <p style={{ fontSize: '14px', color: '#666' }}>Belum ada log perubahan.</p>
+    ) : (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {logs.map((log, i) => (
+          <li key={i} style={{ marginBottom: '12px', padding: '10px', background: '#F7FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+            <div style={{ fontSize: '12px', color: '#555', marginBottom: '4px' }}>{log.time}</div>
+            <div style={{ fontSize: '14px' }}>{log.message}</div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+)}
+
     </div>
   );
 }
