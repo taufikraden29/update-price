@@ -321,7 +321,7 @@ export default function Home() {
                               padding: '4px 10px',
                               borderRadius: '12px',
                               backgroundColor:
-                                item.status === 'Open' ? '#38A169' : '#E53E3E',
+                                item.status === 'Open' ? 'tomato' : '#E53E3E',
                               color: '#fff',
                               fontSize: '0.8rem',
                               fontWeight: '600'
