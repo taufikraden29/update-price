@@ -17,9 +17,12 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [windowWidth, setWindowWidth] = useState(1200);
   const [notif, setNotif] = useState(null);
-  const [logs, setLogs] = useState([]);
   const prevDataRef = useRef([]);
 
+  const [logs, setLogs] = useState(() => {
+    const savedLogs = localStorage.getItem("logs");
+    return savedLogs ? JSON.parse(savedLogs) : [];
+  });
   useEffect(() => {
     const fetchData = () => {
       fetch("/api/produk")
@@ -66,9 +69,13 @@ export default function Home() {
             }
           });
 
-          // Jika ada perubahan, update logs
+          // Jika ada perubahan dan ingin menambahkan log
           if (newLogs.length > 0) {
-            setLogs((prev) => [...newLogs, ...prev]);
+            setLogs((prevLogs) => {
+              const updatedLogs = [...newLogs, ...prevLogs]; // tambahkan logs baru di depan
+              localStorage.setItem("logs", JSON.stringify(updatedLogs)); // simpan di localStorage
+              return updatedLogs;
+            });
           }
 
           // Update data dan lastUpdated
