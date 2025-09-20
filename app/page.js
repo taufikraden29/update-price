@@ -20,9 +20,13 @@ export default function Home() {
   const prevDataRef = useRef([]);
 
   const [logs, setLogs] = useState(() => {
-    const savedLogs = localStorage.getItem("logs");
-    return savedLogs ? JSON.parse(savedLogs) : [];
+    if (typeof window !== "undefined") {
+      const savedLogs = localStorage.getItem("logs");
+      return savedLogs ? JSON.parse(savedLogs) : [];
+    }
+    return [];
   });
+
   useEffect(() => {
     const fetchData = () => {
       fetch("/api/produk")
@@ -72,8 +76,10 @@ export default function Home() {
           // Jika ada perubahan dan ingin menambahkan log
           if (newLogs.length > 0) {
             setLogs((prevLogs) => {
-              const updatedLogs = [...newLogs, ...prevLogs]; // tambahkan logs baru di depan
-              localStorage.setItem("logs", JSON.stringify(updatedLogs)); // simpan di localStorage
+              const updatedLogs = [...newLogs, ...prevLogs];
+              if (typeof window !== "undefined") {
+                localStorage.setItem("logs", JSON.stringify(updatedLogs));
+              }
               return updatedLogs;
             });
           }
